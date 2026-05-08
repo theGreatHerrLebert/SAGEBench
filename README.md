@@ -199,10 +199,11 @@ If you use these datasets, please cite the Zenodo deposit:
 Please also cite the TimSim preprint, which describes the simulator
 that produced the underlying `.d` files:
 
-> Teschner D, et al. *Complete Simulation of timsTOF PASEF Raw
-> Datasets with Timsim Enables Precise Evaluation of False Discovery
-> and Phosphosite Localization Error Rates.* Research Square
-> (preprint). <https://www.researchsquare.com/article/rs-9032301/v1>
+> Teschner D, Xiao Z, Maier T, et al. *Complete Simulation of
+> timsTOF PASEF Raw Datasets with Timsim Enables Precise Evaluation
+> of False Discovery and Phosphosite Localization Error Rates.*
+> Research Square (preprint).
+> <https://www.researchsquare.com/article/rs-9032301/v1>
 
 The TimSim source itself lives at
 <https://github.com/theGreatHerrLebert/rustims>.
