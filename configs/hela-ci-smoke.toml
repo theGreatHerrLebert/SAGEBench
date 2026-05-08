@@ -1,0 +1,135 @@
+# =============================================================================
+# SAGEBench — HeLa CI smoke fixture
+#
+# Tiny DDA-PASEF run intended for Sage's CI: 1 500 HeLa peptides over a
+# 5-minute gradient. The fixture is generated as two replicates
+# (SMOKE-001, SMOKE-002) so the multi-input code path is exercised —
+# this is the path that panicked in lazear/sage#228 (the URL refactor's
+# canonicalize bug surfaced when sage iterated `processing files 0..1`).
+#
+# Designed to:
+#   - exercise the timsTOF code path (TDF reader, m/z calibration,
+#     PASEF metadata) end-to-end
+#   - exercise sage's multi-file iteration (2 .d inputs)
+#   - produce each .d under ~80 MB so it ships in CI cleanly
+#   - be deterministic: seeded from a fixed peptide CSV, no FASTA digestion
+#
+# `from_findings = true` reads peptides from `findings_path` and ignores
+# the `[digestion]` section entirely. The seed CSV was extracted from
+# the canonical HeLa 150K G07M run (SUBMISSION/MBR/data/150K_G07M/
+# TIMSIM-DDA-HELA-150K-G07M-001/synthetic_data.db) — see
+# scripts/extract_smoke_seed.py.
+#
+# scripts/generate_hela_ci_smoke.sh substitutes REP_PLACEHOLDER and
+# runs timsim once per replicate, dropping both .d files under
+# data/ci-smoke/.
+# =============================================================================
+
+[paths]
+save_path       = "data/ci-smoke"
+reference_path  = "/scratch/raw/dda/blanks/K240723_003_S1-A3_1_2774.d"
+fasta_path      = ""
+findings_path   = "seeds/hela_ci_smoke.csv"
+modifications   = "configs/modifications.toml"
+existing_path   = ""
+
+[experiment]
+experiment_name      = "SAGEBENCH-CI-HELA-SMOKE-REP_PLACEHOLDER"
+acquisition_type     = "DDA"
+gradient_length      = 300.0
+use_reference_layout = true
+reference_in_memory  = false
+use_bruker_sdk       = true
+apply_fragmentation  = true
+from_existing        = false
+from_findings        = true
+silent_mode          = false
+
+# [digestion] omitted: from_findings=true reads peptides from findings_path.
+
+[models]
+rt_model        = ""
+ccs_model       = ""
+intensity_model = ""
+
+[retention_time]
+min_rt_percent                     = 2.0
+exclude_accumulated_gradient_start = true
+target_p                           = 0.999
+sampling_step_size                 = 0.0001
+n_steps                            = 1000
+remove_epsilon                     = 0.0001
+
+[ion_mobility]
+use_inverse_mobility_std_mean = false
+inverse_mobility_std_mean     = 0.0075
+
+[charge_states]
+p_charge                     = 0.5
+max_charge                   = 4
+min_charge_contrib           = 0.25
+binomial_charge_model        = false
+normalize_charge_states      = true
+charge_state_one_probability = 0.0
+
+[isotopic_pattern]
+isotope_k             = 8
+isotope_min_intensity = 1
+isotope_centroid      = true
+
+[fragment_intensity]
+down_sample_factor = 0.5
+
+[noise]
+noise_frame_abundance         = false
+noise_scan_abundance          = false
+mz_noise_precursor            = true
+precursor_noise_ppm           = 6.5
+mz_noise_fragment             = true
+fragment_noise_ppm            = 6.5
+mz_noise_uniform              = false
+add_real_data_noise           = true
+reference_noise_intensity_max = 9999999
+precursor_sample_fraction     = 0.2
+fragment_sample_fraction      = 0.2
+num_precursor_noise_frames    = 5
+num_fragment_noise_frames     = 5
+
+[variation]
+re_scale_rt                = false
+rt_variation_std           = 10
+ion_mobility_variation_std = 0.01
+intensity_variation_std    = 0.02
+
+[acquisition]
+round_collision_energy    = true
+collision_energy_decimals = 0
+
+[dda]
+precursors_every              = 7
+precursor_intensity_threshold = 1000
+max_precursors                = 8
+exclusion_width               = 25
+selection_mode                = "topN"
+
+[proteome_mix]
+proteome_mix = false
+
+[phosphorylation]
+phospho_mode = false
+
+[performance]
+num_threads          = -1
+batch_size           = 256
+frame_batch_size     = 500
+# lazy_frame_assembly does NOT work for DDA — keep false.
+lazy_frame_assembly  = false
+use_gpu              = false
+gpu_memory_limit_gb  = 4
+
+[logging]
+log_level = "INFO"
+log_file  = ""
+
+[video_settings]
+generate_preview_video = false

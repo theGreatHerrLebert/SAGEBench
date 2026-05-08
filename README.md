@@ -1,0 +1,169 @@
+# SAGEBench
+
+Simulated Bruker `.d` fixtures and a small benchmark harness for the
+[Sage](https://github.com/lazear/sage) database search engine.
+
+The aim is two-fold:
+
+1. Provide **CI-grade Bruker test data** for Sage so regressions in the
+   timsTOF code path (e.g. the `timsrust` URL/canonicalize bug from
+   [lazear/sage#228](https://github.com/lazear/sage/issues/228)) get
+   caught before release.
+2. Provide a **larger, ground-truth-backed evaluation set** so anyone
+   can compute true FDR / TPR for Sage on simulated DDA data, in the
+   same spirit as `timsim-bench` does for DIA.
+
+All data is generated with [TimSim](https://github.com/theGreatHerrLebert/rustims).
+Because TimSim records the exact peptides, charges, RTs and intensities
+it injected into the synthetic run, ground truth is exact rather than
+inherited from another search engine.
+
+## Datasets
+
+| Slot              | Source                                               | Peptides | Gradient | Reps | Approx. size |
+|-------------------|------------------------------------------------------|----------|----------|------|--------------|
+| HeLa CI smoke     | generated here (`scripts/generate_hela_ci_smoke.sh`) |    1 500 |   5 min  | 2    | ~235 MB / rep |
+| HeLa 150K eval    | reused from `SUBMISSION/MBR/data/150K_G30M`          |  150 000 |  30 min  | 3    | ~6 GB / rep  |
+| HLA 10K eval      | reused from `SUBMISSION/zenodo/.../thunder-10K`      |   10 000 |  40 min  | 3    | ~825 MB / rep |
+| HLA 100K eval     | reused from `SUBMISSION/zenodo/.../thunder-100K`     |  100 000 |  60 min  | 3    | ~3 GB / rep  |
+
+Symlinks in `data/refs/` point at the existing copies on this machine
+so the harness can run against them without duplicating multi-GB
+trees. The CI-smoke `.d` lives directly under `data/ci-smoke/`.
+
+## Layout
+
+```
+SAGEBench/
+├── configs/             TimSim configs (smoke is novel; the rest document existing runs)
+├── seeds/               Findings-mode seed CSV for the smoke fixture
+├── scripts/             Regen, sage runner, Zenodo bundling
+├── sagebench/           Python harness: ground-truth join + FDR / TPR
+├── data/refs/           Symlinks into the existing zenodo / MBR data
+├── data/ci-smoke/       Regenerated tiny .d (gitignored)
+├── notebooks/           Demo notebook for sage-on-simulated
+├── tests/               Harness tests
+└── github/              Draft comment + PR materials for lazear/sage
+```
+
+## First-run results
+
+End-to-end on this host (sage 0.15.0-beta.2 with a local one-liner fix
+to `read_tdf`; see `github/ISSUE_228_COMMENT.md`). All numbers at 1 %
+peptide-FDR (`peptide_q ≤ 0.01`):
+
+| Dataset                | Precursors | True FDR | TPR     |
+|------------------------|-----------:|---------:|--------:|
+| HeLa CI smoke          |        871 |  0.23 %  | 60.0 %  |
+| HeLa 150K G07M (rep001)|      1 005 |  4.11 %  |  0.31 % |
+| HeLa 150K G15M (rep001)|      1 913 |  3.14 %  |  0.61 % |
+| HeLa 150K G30M (rep001)|      3 572 |  3.81 %  |  1.09 % |
+| HeLa 150K G30M (rep002)|      3 636 |  3.00 %  |  1.12 % |
+| HeLa 150K G30M (rep003)|      3 732 |  3.64 %  |  1.14 % |
+| HeLa 300K G30M (rep001)|      3 773 |  3.58 %  |  1.20 % |
+| HLA 10K G40            |      2 233 |  2.42 %  | 13.3 %  |
+
+The HeLa TPR is low because TimSim's truth set is the full 150 000
+peptides injected, but DDA topN only ever fragments ~3 % of them on a
+30-minute gradient (~113 000 PASEF selections vs 315 000 simulated
+precursors). A "TPR over the fragmentable subset" would land an order
+of magnitude higher; for now we report TPR vs full truth so the metric
+is unambiguous.
+
+### Three-level evaluation (HeLa 150K G30M rep001, q ≤ 0.01)
+
+| Level    |  Reported | True FDR | TPR (full) | TPR (frag) |
+|----------|----------:|---------:|-----------:|-----------:|
+| ion      |    3 572  |  3.81 %  |   1.09 %   |  **2.03 %** |
+| peptide  |    3 230  |  3.59 %  |   2.00 %   |  **3.03 %** |
+| protein  |    2 061  |  0.05 %  |  11.4 %    |  **12.1 %** |
+
+**TPR (full)** is over the entire TimSim truth (every peptide injected).
+**TPR (frag)** is over the *fragmentable* subset — entries whose
+(charge, m/z) match an MS2 selection event in `pasef_meta`. For
+DDA we can only identify what got fragmented, so the fragmentable
+denominator is the honest one. The lift is ~2× on G30M (54 % of
+ions are fragmentable); on shorter gradients (e.g. G07M, where only
+~14 % of ions are fragmentable), the lift is closer to an order of
+magnitude.
+
+Protein-level FDR is dramatically better than peptide/ion
+(aggregation absorbs single misidentifications). The drift sage
+exhibits is at the peptide/precursor level.
+
+### TDC analysis: where does the q-value drift come from?
+
+Re-rescoring HeLa 150K G30M via `sagepy.qfdr.tdc` exposes the LDA
+discriminant as the source of sage's calibration drift. At q ≤ 0.01,
+peptide-level:
+
+| Estimator                              | Reported | True FDR |
+|----------------------------------------|---------:|---------:|
+| sage peptide_q (native)                |    3 230 |  3.59 %  |
+| **hyperscore + PSM-level TDC**         |  2 892   | **1.80 %** |
+| **hyperscore + peptide double comp.**  |  2 862   | **1.57 %** |
+| LDA disc. + PSM-level TDC              |    3 563 |  3.93 %  |
+| LDA disc. + peptide double comp.       |    3 539 |  3.67 %  |
+
+Raw hyperscore-driven TDC sits well within the 1 % target; LDA-driven
+TDC drifts to ~3.7 %. PSM-vs-double competition has only minor effect
+within either score type. See `runs/REPORT.html` for the calibration
+plots and Venns at all three levels.
+
+## Build the HTML report
+
+```bash
+python -m sagebench report \
+    --config sagebench-report.toml \
+    --out runs/REPORT.html
+```
+
+Self-contained `runs/REPORT.html` (inline SVG plots) — embed or share
+without any other assets.
+
+See `runs/RESULTS.md` for FP categorisation and discussion.
+
+## Quick start
+
+```bash
+# 1. Install the harness in a TimSim-capable venv (Python 3.11+).
+poetry install
+
+# 2. Generate the CI smoke fixture (~minutes; 2 replicates).
+#    Needs a TimSim build with `from_findings` support (rustims
+#    feature/simulate-from-findings, commit 03398133+). The MHCbench
+#    venv on this host already has it:
+TIMSIM=/scratch/TMAlign/MHCbench/.venv/bin/timsim \
+    bash scripts/generate_hela_ci_smoke.sh
+
+# 3. Run sage against both replicates (multi-file pass).
+SAGE=/path/to/sage bash scripts/run_sage.sh \
+    runs/ci-smoke/ \
+    data/ci-smoke/SAGEBENCH-CI-HELA-SMOKE-001/SAGEBENCH-CI-HELA-SMOKE-001.d \
+    data/ci-smoke/SAGEBENCH-CI-HELA-SMOKE-002/SAGEBENCH-CI-HELA-SMOKE-002.d
+
+# 4. Score against ground truth.
+python -m sagebench eval \
+    --sage-out runs/ci-smoke/results.sage.parquet \
+    --truth   data/ci-smoke/SAGEBENCH-CI-HELA-SMOKE-001/synthetic_data.db \
+              data/ci-smoke/SAGEBENCH-CI-HELA-SMOKE-002/synthetic_data.db
+```
+
+## Conventions
+
+- Configs use the post-refactor TimSim TOML schema (`[paths]`,
+  `[experiment]`, …) with `from_findings = true` for the smoke
+  fixture and full-FASTA digestion for the larger eval sets.
+- Reference blanks come from `SUBMISSION/zenodo/blanks/` (HLA Thunder)
+  or `/scratch/raw/dda/blanks/` (HeLa K240723).
+- The harness consumes Sage's parquet output and joins on
+  `(sequence_unimod, charge)` against TimSim's `synthetic_data.db`
+  to compute true FDR per the definition in `si1_mm.tex` of the
+  paper submission.
+
+## Why a separate project?
+
+`timsim-bench` is DIA-leaning and tied to the paper's metric pipeline.
+SAGEBench is DDA-only, sage-only, and meant to live independently so
+external users (incl. the Sage maintainer) can pick it up without
+pulling in the rest of the submission package.

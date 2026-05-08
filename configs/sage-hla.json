@@ -1,0 +1,45 @@
+{
+  "_comment": "SAGEBench — Sage config for the HLA peptide eval sets. Unspecific digest (cleave_at=\"\") with length 7-15 covers MHC-I ligand space. Chunked / prefiltered search keeps memory under control given the 113K-protein HLA1 FASTA: every 7-15-mer of every protein is a candidate, so without prefilter the fragment index blows up. precursor_charge widened to [1,4] because some MHC-I peptides come up singly charged.",
+
+  "database": {
+    "bucket_size": 32768,
+    "enzyme": {
+      "missed_cleavages": 0,
+      "min_len": 7,
+      "max_len": 15,
+      "cleave_at": "",
+      "restrict": null,
+      "c_terminal": true
+    },
+    "peptide_min_mass": 600.0,
+    "peptide_max_mass": 2500.0,
+    "ion_kinds": ["b", "y"],
+    "min_ion_index": 2,
+    "static_mods": { "C": 57.0215 },
+    "variable_mods": {
+      "M": [15.9949]
+    },
+    "max_variable_mods": 1,
+    "decoy_tag": "rev_",
+    "generate_decoys": true,
+    "fasta": "/scratch/timsim-demo/SUBMISSION/zenodo/hla/hla/timsim-hla-thunder-topN/thunder-10K/HLA1.fasta",
+
+    "prefilter": true,
+    "prefilter_chunk_size": 0,
+    "prefilter_low_memory": true
+  },
+
+  "precursor_tol": { "ppm": [-10.0, 10.0] },
+  "fragment_tol":  { "ppm": [-20.0, 20.0] },
+  "precursor_charge": [1, 4],
+  "isotope_errors": [-1, 2],
+
+  "deisotope": true,
+  "chimera": false,
+  "min_peaks": 10,
+  "max_peaks": 150,
+  "min_matched_peaks": 4,
+  "max_fragment_charge": 2,
+  "report_psms": 1,
+  "predict_rt": false
+}

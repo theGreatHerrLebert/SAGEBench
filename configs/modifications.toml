@@ -1,0 +1,12 @@
+# Variable + fixed modifications used across all SAGEBench fixtures.
+# Matches the canonical zenodo HLA / HeLa submission configs.
+
+[variable_modifications]
+# Methionine oxidation (UNIMOD:35).
+"M" = ["[UNIMOD:35]"]
+# N-terminal acetylation (UNIMOD:1).
+"[" = ["[UNIMOD:1]"]
+
+[fixed_modifications]
+# Carbamidomethylation of cysteine (UNIMOD:4).
+"C" = "[UNIMOD:4]"

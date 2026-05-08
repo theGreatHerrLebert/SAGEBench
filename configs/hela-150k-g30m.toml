@@ -1,0 +1,106 @@
+# =============================================================================
+# SAGEBench — HeLa 150K eval (30-min gradient, MBR section)
+#
+# This file documents the parameters of the existing HeLa 150K DDA runs
+# stored at:
+#   SUBMISSION/MBR/data/150K_G30M/TIMSIM-DDA-HELA-150K-G30M-{001, 012, 013}
+#
+# The G30M reps were generated under the same recipe as the G07M
+# series (see arguments-TIMSIM-DDA-HELA-150K-G07M-001.txt for the
+# full argument dump); only `gradient_length` differs (450 s → 1800 s).
+#
+# Source paths reference the original simulation host
+# (/cmnfs/proj/ORIGINS/...) and need adjusting before rerunning.
+# =============================================================================
+
+[main_settings]
+save_path            = "/cmnfs/proj/ORIGINS/data/timsim/dda_with_noise/150K_G30M/"
+reference_path       = "/cmnfs/proj/ORIGINS/data/timsim/blanks/K240723_003_S1-A3_1_2774.d"
+fasta_path           = "/cmnfs/proj/ORIGINS/data/fasta/uniprot-proteome_human_reviewed_canonical_20220419.fasta"
+experiment_name      = "TIMSIM-DDA-HELA-150K-G30M-001"
+acquisition_type     = "DDA"
+use_reference_layout = true
+reference_in_memory  = false
+sample_peptides      = true
+sample_seed          = 41
+add_decoys           = false
+proteome_mix         = false
+silent_mode          = false
+from_existing        = true
+existing_path        = "/cmnfs/proj/ORIGINS/data/timsim/dda_with_noise/150K_G30M/TIMSIM-DDA-HELA-150K-G30M-001"
+apply_fragmentation  = true
+use_bruker_sdk       = true
+
+[peptide_digestion]
+n_proteins          = 20000
+num_sample_peptides = 150000
+num_peptides_total  = 700000
+missed_cleavages    = 2
+min_len             = 7
+max_len             = 30
+cleave_at           = "KR"
+restrict            = "P"
+
+[peptide_intensity]
+intensity_mean      = 5
+intensity_min       = 4
+intensity_max       = 8
+sample_occurrences  = true
+intensity_value     = 6
+add_noise_to_signals = true
+
+[isotopic_pattern]
+isotope_k             = 8
+isotope_min_intensity = 1
+isotope_centroid      = true
+
+[distribution_settings]
+gradient_length               = 1800.0
+sigma_alpha_rt                = 1
+sigma_beta_rt                 = 1
+k_lower_rt                    = 0.1
+k_upper_rt                    = 2
+k_alpha_rt                    = 1
+k_beta_rt                     = 1
+z_score                       = 0.99
+target_p                      = 0.999
+sampling_step_size            = 0.0001
+use_inverse_mobility_std_mean = false
+inverse_mobility_std_mean     = 0.0075
+
+[noise_settings]
+mz_noise_precursor            = true
+precursor_noise_ppm           = 6.5
+mz_noise_fragment             = true
+fragment_noise_ppm            = 6.5
+mz_noise_uniform              = false
+add_real_data_noise           = true
+reference_noise_intensity_max = 9999999
+down_sample_factor            = 0.5
+
+[charge_state_probabilities]
+p_charge                = 0.5
+min_charge_contrib      = 0.25
+max_charge              = 4
+binomial_charge_model   = false
+normalize_charge_states = true
+
+[dda_settings]
+precursors_every              = 7
+precursor_intensity_threshold = 1000
+max_precursors                = 8
+exclusion_width               = 25
+selection_mode                = "topN"
+digest_proteins               = true
+
+[property_variation_settings]
+rt_variation_std           = 15
+ion_mobility_variation_std = 0.008
+intensity_variation_std    = 0.02
+
+[modifications]
+modifications = "modifications.toml"
+
+[performance_settings]
+num_threads = -1
+batch_size  = 256

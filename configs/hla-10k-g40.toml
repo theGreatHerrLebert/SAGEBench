@@ -1,0 +1,100 @@
+# =============================================================================
+# SAGEBench — HLA 10K eval (40-min gradient)
+#
+# Verbatim copy of the config that produced the existing zenodo deposit
+#   SUBMISSION/zenodo/hla/hla/timsim-hla-thunder-topN/thunder-10K/
+#   {TIMSIM-DDA-HLA-10K-G40-001, -002, -003}
+# Schema is the pre-refactor TimSim TOML layout ([main_settings] etc.).
+# Paths reflect the original simulation host and are kept for provenance;
+# rerunning needs them adjusted to the local layout.
+# =============================================================================
+
+[main_settings]
+save_path = "/scratch/dateschn/sim/dda/hla/thunder-100K/"
+reference_path = "/scratch/dateschn/raw/dda/blanks/G230913_002_Slot2-2_1_11392.d"
+fasta_path = "HLA1.fasta"
+experiment_name = "TIMSIM-DDA-HLA-10K-G40-001"
+acquisition_type = "DDA"
+use_reference_layout = true
+reference_in_memory = false
+sample_peptides = true
+add_decoys = false
+proteome_mix = false
+silent_mode = false
+from_existing = false
+existing_path = ""
+apply_fragmentation = true
+
+[peptide_digestion]
+n_proteins = 20000
+num_sample_peptides = 10000
+missed_cleavages = 1
+min_len = 7
+max_len = 25
+cleave_at = ""
+restrict = "P"
+
+[peptide_intensity]
+intensity_mean = 5
+intensity_min = 4
+intensity_max = 8
+sample_occurrences = true
+intensity_value = 6
+
+[isotopic_pattern]
+isotope_k = 8
+isotope_min_intensity = 1
+isotope_centroid = true
+
+[distribution_settings]
+gradient_length = 2400.0
+sigma_alpha_rt  = 1
+sigma_beta_rt   = 1
+k_lower_rt = 0.1
+k_upper_rt = 2
+k_alpha_rt = 1
+k_beta_rt  = 1
+z_score = 0.99
+target_p = 0.999
+sampling_step_size = 0.0001
+use_inverse_mobility_std_mean = false
+inverse_mobility_std_mean = 0.0075
+
+[phosphorylation_settings]
+phospho_mode = false
+
+[noise_settings]
+add_noise_to_signals = true
+mz_noise_precursor = true
+precursor_noise_ppm = 6.5
+mz_noise_fragment = true
+fragment_noise_ppm = 6.5
+mz_noise_uniform = false
+add_real_data_noise = true
+reference_noise_intensity_max = 9999999
+down_sample_factor = 0.5
+
+[charge_state_probabilities]
+p_charge = 0.5
+min_charge_contrib = 0.25
+binomial_charge_model = true
+
+[dda_settings]
+precursors_every = 7
+max_precursors = 12
+exclusion_width = 25
+precursor_intensity_threshold = 1000
+selection_mode = "topN"
+digest_proteins = false
+
+[property_variation_settings]
+rt_variation_std = 10
+ion_mobility_variation_std = 0.01
+intensity_variation_std = 0.02
+
+[modifications]
+modifications = "modifications.toml"
+
+[performance_settings]
+num_threads = -1
+batch_size = 256

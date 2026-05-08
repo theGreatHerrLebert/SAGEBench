@@ -1,0 +1,83 @@
+# Inventory of sage runs to bundle into runs/REPORT.html.
+#   python -m sagebench report --config sagebench-report.toml --out runs/REPORT.html
+
+title    = "SAGEBench — Sage 0.15.0-beta.2 vs TimSim ground truth"
+subtitle = "Sage built from /home/administrator/Documents/promotion/rust/sage with the local read_tdf URL→path patch (mirroring read_pmsms). All cutoffs use peptide_q."
+
+notes = """
+True FDR is computed at the precursor level: target PSMs are deduplicated by (sequence_unimod, charge) before TP/FP counting.
+
+TPR denominators are the full TimSim ground truth — every (sequence, charge) the simulator injected. For DDA topN that wildly understates real recall: most simulated peptides never receive an MS2 spectrum (e.g. 113 K PASEF events on the 30-min HeLa run vs. 315 K simulated precursors). A "TPR over the fragmentable subset" would land an order of magnitude higher.
+
+The HeLa CI smoke is the fixture the issue lazear/sage#228 reproduces with — running sage 0.15.0-beta.2 against both .d files exercises the multi-input file iteration that the URL refactor broke.
+"""
+
+[[runs]]
+name     = "HeLa CI smoke (2× .d, 5-min)"
+sage_out = "runs/ci-smoke/results.sage.parquet"
+truth    = [
+  "data/ci-smoke/SAGEBENCH-CI-HELA-SMOKE-001/synthetic_data.db",
+  "data/ci-smoke/SAGEBENCH-CI-HELA-SMOKE-002/synthetic_data.db",
+]
+
+[[runs]]
+name     = "HeLa 150K G07M (rep001)"
+sage_out = "runs/hela-150k-g07m-001/results.sage.parquet"
+truth    = ["data/refs/hela-150k-g07m-001/synthetic_data.db"]
+
+[[runs]]
+name     = "HeLa 150K G15M (rep001)"
+sage_out = "runs/hela-150k-g15m-001/results.sage.parquet"
+truth    = ["data/refs/hela-150k-g15m-001/synthetic_data.db"]
+
+[[runs]]
+name     = "HeLa 150K G30M (rep001)"
+sage_out = "runs/hela-150k-g30m/results.sage.parquet"
+truth    = ["data/refs/hela-150k-g30m/synthetic_data.db"]
+
+[[runs]]
+name     = "HeLa 150K G30M (rep002)"
+sage_out = "runs/hela-150k-g30m-002/results.sage.parquet"
+truth    = ["data/refs/hela-150k-g30m-002/synthetic_data.db"]
+
+[[runs]]
+name     = "HeLa 150K G30M (rep003)"
+sage_out = "runs/hela-150k-g30m-003/results.sage.parquet"
+truth    = ["data/refs/hela-150k-g30m-003/synthetic_data.db"]
+
+[[runs]]
+name     = "HeLa 300K G30M (rep001)"
+sage_out = "runs/hela-300k-g30m-001/results.sage.parquet"
+truth    = ["data/refs/hela-300k-g30m-001/synthetic_data.db"]
+
+[[runs]]
+name     = "HLA 10K G40 (unspecific)"
+sage_out = "runs/hla-10k/results.sage.parquet"
+truth    = ["data/refs/hla-10k/TIMSIM-DDA-HLA-10K-G40-001/synthetic_data.db"]
+
+[[venns]]
+title    = "G30M replicate consistency"
+subtitle = "How stable are sage's identifications across simulated replicates?"
+runs     = ["HeLa 150K G30M (rep001)", "HeLa 150K G30M (rep002)", "HeLa 150K G30M (rep003)"]
+
+[[venns]]
+title    = "Gradient effect (150K HeLa, rep001)"
+subtitle = "Do longer gradients add IDs on top, or also swap which peptides win topN?"
+runs     = ["HeLa 150K G07M (rep001)", "HeLa 150K G15M (rep001)", "HeLa 150K G30M (rep001)"]
+
+[[venns]]
+title    = "Proteome density at fixed gradient (G30M)"
+subtitle = "150K vs 300K peptides on the same 30-min gradient — does sage handle the chimeric load?"
+runs     = ["HeLa 150K G30M (rep001)", "HeLa 150K G30M (rep002)", "HeLa 300K G30M (rep001)"]
+
+[deep_dive]
+# Drives the TDC variant analysis: pick the run whose q-value drift we
+# want to dissect, then sweep score (hyperscore vs LDA discriminant) and
+# competition method (PSM-level vs peptide double).
+run_name = "HeLa 150K G30M (rep001)"
+variants = [
+    ["hyperscore",              "psm"],
+    ["hyperscore",              "peptide_psm_peptide"],
+    ["sage_discriminant_score", "psm"],
+    ["sage_discriminant_score", "peptide_psm_peptide"],
+]

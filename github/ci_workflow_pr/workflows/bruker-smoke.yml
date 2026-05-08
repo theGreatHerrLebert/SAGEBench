@@ -1,0 +1,52 @@
+# Skeleton CI workflow for lazear/sage. NOT yet a working file —
+# the maintainer will need to wire it up to whatever fixture
+# distribution method they pick (release asset / LFS / Zenodo).
+name: bruker-smoke
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  bruker-smoke:
+    name: Sage on simulated Bruker .d
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build sage (release)
+        run: cargo build --release --bin sage
+
+      - name: Fetch SAGEBench smoke fixture
+        env:
+          # Replace with the chosen distribution URL.
+          FIXTURE_URL: https://example.invalid/sagebench-ci-smoke.tar.gz
+        run: |
+          mkdir -p tests/data/bruker-smoke
+          curl -sSL "$FIXTURE_URL" \
+            | tar -xz -C tests/data/bruker-smoke
+          ls tests/data/bruker-smoke
+
+      - name: Run sage on both .d files (multi-input path)
+        run: |
+          ./target/release/sage --parquet \
+            --output_directory tests/data/bruker-smoke/out \
+            tests/data/bruker-smoke/sage.json \
+            tests/data/bruker-smoke/SAGEBENCH-CI-HELA-SMOKE-001.d \
+            tests/data/bruker-smoke/SAGEBENCH-CI-HELA-SMOKE-002.d
+
+      - name: Assert sage produced PSMs
+        run: |
+          python - <<'PY'
+          import pyarrow.parquet as pq
+          import sys, glob
+          parquets = glob.glob("tests/data/bruker-smoke/out/*.parquet")
+          assert parquets, "no parquet in sage output dir"
+          t = pq.read_table(parquets[0])
+          assert t.num_rows > 0, f"empty PSM table: {parquets[0]}"
+          print(f"OK: {t.num_rows} PSMs in {parquets[0]}")
+          PY

@@ -1,0 +1,42 @@
+{
+  "_comment": "SAGEBench — Sage config for the HeLa 150K G07M evaluation set. Same digestion + modifications as the smoke; larger bucket_size for the bigger search space and predict_rt enabled because the gradient is realistic enough for the predictor to help.",
+
+  "database": {
+    "bucket_size": 32768,
+    "enzyme": {
+      "missed_cleavages": 2,
+      "min_len": 7,
+      "max_len": 30,
+      "cleave_at": "KR",
+      "restrict": "P",
+      "c_terminal": true
+    },
+    "peptide_min_mass": 600.0,
+    "peptide_max_mass": 5000.0,
+    "ion_kinds": ["b", "y"],
+    "min_ion_index": 2,
+    "static_mods": { "C": 57.0215 },
+    "variable_mods": {
+      "M": [15.9949],
+      "[": [42.01057]
+    },
+    "max_variable_mods": 2,
+    "decoy_tag": "rev_",
+    "generate_decoys": true,
+    "fasta": "/tmp/hela.fasta"
+  },
+
+  "precursor_tol": { "ppm": [-10.0, 10.0] },
+  "fragment_tol":  { "ppm": [-15.0, 15.0] },
+  "precursor_charge": [2, 4],
+  "isotope_errors": [-1, 2],
+
+  "deisotope": true,
+  "chimera": false,
+  "min_peaks": 15,
+  "max_peaks": 150,
+  "min_matched_peaks": 4,
+  "max_fragment_charge": 2,
+  "report_psms": 1,
+  "predict_rt": true
+}

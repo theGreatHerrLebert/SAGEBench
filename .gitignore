@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Poetry
+poetry.lock
+
+# Generated simulation outputs — everything inside data/ci-smoke/ is
+# regenerable via scripts/generate_hela_ci_smoke.sh (or downloadable
+# from the SAGEBench Zenodo deposit), so it stays out of git.
+data/ci-smoke/
+data/eval/
+data/*.log
+*.tdf_bin
+*.tdf
+
+# Host-specific symlinks into other /scratch locations — only valid on
+# the build host. Anyone cloning the repo regenerates these by running
+# scripts/generate_hela_ci_smoke.sh or by pulling the Zenodo deposits.
+data/refs/
+
+# Sage outputs (intermediate runs; checked-in fixtures live under tests/fixtures)
+runs/
+*.parquet
+!tests/fixtures/**/*.parquet
+
+# Bundled archives we ship to Zenodo
+zenodo-bundle/*.zip
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
